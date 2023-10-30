@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "python-aux"
+version = "0.1.0"
+description = ""
+authors = ["fbjarkes <fbjarkes-github.q5706@aleeas.com>"]
+readme = "README.md"
+packages = [{include = "python_aux"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
