@@ -4,6 +4,6 @@ def try_except(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(e)
+            print(e) #TODO: user logger
 
     return handler

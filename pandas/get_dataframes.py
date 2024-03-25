@@ -1,4 +1,12 @@
+from functools import lru_cache
+import json
+import os
+from typing import Dict, Optional, Union
+import numpy as np
+import pandas as pd
 
+from utils.decorators import try_except
+from utils.functional import pipe
 
 
 def filter_rth(df: pd.DataFrame, start_time='09:30', end_time='16:00') -> pd.DataFrame:
@@ -69,6 +77,7 @@ def load_json_data(symbol: str, path: str) -> Optional[Dict]:
             return symbol_data
     return None
 
+
 def json_to_dataframe(symbol: str, timeframe: str, data: Dict) -> pd.DataFrame:
     if data is None:
         return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])    
@@ -79,10 +88,12 @@ def json_to_dataframe(symbol: str, timeframe: str, data: Dict) -> pd.DataFrame:
     df.attrs = {'symbol': symbol, 'timeframe': timeframe}
     return df
 
+
 def get_dataframe_alpaca_file(timeframe: str, symbol: str, path: str) -> Union[pd.DataFrame, None]:
     file_path = os.path.expanduser(f"{path}{os.sep}{timeframe}{os.sep}{symbol}.json")
     json_data = load_json_data(symbol, file_path)
     return json_to_dataframe(symbol, timeframe, json_data)
+
 
 @lru_cache
 def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=None, transform='') -> pd.DataFrame:
@@ -120,6 +131,7 @@ def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False,
         if not df.empty:
             dfs.append(df)
     return dfs
+
 
 def transform_timeframe(df: pd.DataFrame, timeframe:str, transform:str) -> pd.DataFrame:
     if timeframe == transform or df.empty:
