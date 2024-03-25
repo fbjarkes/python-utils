@@ -8,6 +8,7 @@ packages = [{include = "python_aux"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
+pandas = "^2.2.1"
 
 
 [tool.poetry.group.dev.dependencies]
