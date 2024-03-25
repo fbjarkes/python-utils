@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "python-aux"
-version = "0.1.0"
+version = "0.0.1"
 description = ""
 authors = ["fbjarkes <fbjarkes-github.q5706@aleeas.com>"]
 readme = "README.md"
 packages = [{include = "python_aux"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.9.5"
 pandas = "^2.2.1"
 
 
