@@ -1,12 +1,12 @@
 from functools import lru_cache
 import json
 import os
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
 
-from utils.decorators import try_except
-from utils.functional import pipe
+from ..utils.decorators import try_except
+from ..utils.functional import pipe
 
 
 def filter_rth(df: pd.DataFrame, start_time='09:30', end_time='16:00') -> pd.DataFrame:
@@ -111,6 +111,7 @@ def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=
         raise Exception(f"Unknown provider '{provider}'")
 
 
+# TODO: User ProcessPool/p-tqdm
 def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False, path=None, transform='') -> List[pd.DataFrame]:
     if not path:
         raise Exception(f"Missing path for provider '{provider}'")
