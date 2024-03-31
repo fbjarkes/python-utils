@@ -7,6 +7,7 @@ import pandas as pd
 
 from ..utils.decorators import try_except
 from ..utils.functional import pipe
+from multiprocessing import Pool
 
 
 def filter_rth(df: pd.DataFrame, start_time='09:30', end_time='16:00') -> pd.DataFrame:
@@ -85,6 +86,7 @@ def json_to_dataframe(symbol: str, timeframe: str, data: Dict) -> pd.DataFrame:
     df.set_index('DateTime', inplace=True)
     # Convert to Wall Street time since all trades have start/dates in Wall Street time
     df.index = pd.to_datetime(df.index, utc=True).tz_convert('America/New_York').tz_localize(None)
+    df = df.sort_index() # TODO: Never needed before?!
     df.attrs = {'symbol': symbol, 'timeframe': timeframe}
     return df
 
@@ -111,8 +113,7 @@ def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=
         raise Exception(f"Unknown provider '{provider}'")
 
 
-# TODO: User ProcessPool/p-tqdm
-def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False, path=None, transform='') -> List[pd.DataFrame]:
+def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False, path=None, transform='', process_workers=0) -> List[pd.DataFrame]:
     if not path:
         raise Exception(f"Missing path for provider '{provider}'")
         
@@ -127,10 +128,15 @@ def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False,
     else:
         symbols = list(set(symbol_list))  # NOTE: reorders elements      
     
-    for symbol in symbols:
-        df = get_dataframe(provider, symbol, start, end, timeframe, rth_only, path, transform)
-        if not df.empty:
-            dfs.append(df)
+    if process_workers > 0:
+        with Pool(process_workers) as pool:
+            dfs = pool.starmap(get_dataframe, [(provider, symbol, start, end, timeframe, rth_only, path, transform) for symbol in symbols])
+            dfs = [df for df in dfs if not df.empty]
+    else:
+        for symbol in symbols:
+            df = get_dataframe(provider, symbol, start, end, timeframe, rth_only, path, transform)
+            if not df.empty:
+                dfs.append(df)    
     return dfs
 
 
@@ -139,7 +145,7 @@ def transform_timeframe(df: pd.DataFrame, timeframe:str, transform:str) -> pd.Da
         return df
     conversion = {'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last', 'Volume': 'sum'}
     if timeframe == 'day' and transform == 'month':
-        resampled = df.resample('M').agg(conversion)
+        resampled = df.resample('ME').agg(conversion)
     elif timeframe == 'day' and transform == 'week':
         resampled = df.resample('W').agg(conversion)
     else:
