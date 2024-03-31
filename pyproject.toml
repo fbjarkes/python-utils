@@ -53,7 +53,5 @@ line_length = 180
 #  "tests",
 #]
 
-
-
-[tool.poetry.scripts]
-format = "black . &&  ruff . && isort ."
+#[tool.poetry.scripts]
+#format = "black . &&  ruff . && isort ."
