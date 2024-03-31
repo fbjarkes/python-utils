@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from functools import lru_cache
 from multiprocessing import Pool
@@ -11,6 +12,9 @@ from ..utils.decorators import try_except
 from ..utils.functional import pipe
 
 
+logger = logging.getLogger(__name__)
+
+
 def filter_rth(df: pd.DataFrame, start_time='09:30', end_time='16:00') -> pd.DataFrame:
     if start_time and end_time and not df.empty and df.attrs['timeframe'] not in ['day', 'week', 'month']:
         return df.between_time(start_time, end_time, inclusive='left')
@@ -20,7 +24,6 @@ def filter_rth(df: pd.DataFrame, start_time='09:30', end_time='16:00') -> pd.Dat
 
 def filter_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
     # TODO: raise exception if start/end outside of df?
-
     if start and end and not df.empty:
         df = df[start:end]
         return df
@@ -33,7 +36,7 @@ def filter_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
 
 def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_York') -> Union[pd.DataFrame, None]:
     file_path = f"{path}/{timeframe}/{symbol}.csv"
-    print(f"{symbol}: parsing tradingview data '{file_path}'")
+    logger.debug(f"{symbol}: parsing tradingview data '{file_path}'")
     try:
         df = pd.read_csv(file_path, index_col='time', parse_dates=False, usecols=['time', 'open', 'high', 'low', 'close', 'Volume'])
         if tz:
@@ -47,10 +50,10 @@ def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_Yor
         if dupe_count > 0:
             # remove duplicate rows
             df = df[~duplicates]
-        print(f"{symbol}: {len(df)} rows (start={df.index[0]}, end={df.index[-1]} dupes={dupe_count}) ")
+        logger.debug(f"{symbol}: {len(df)} rows (start={df.index[0]}, end={df.index[-1]} dupes={dupe_count}) ")
         return df
     except Exception as e:
-        print(f"Error parsing csv '{path}': {e}")
+        logger.warning(f"Error parsing csv '{path}': {e}")
 
     return pd.DataFrame()
 
@@ -62,21 +65,21 @@ def get_dataframe_ib(timeframe: str, symbol: str, path: str, tz='America/New_Yor
         # TODO need to convert to TZ America/New_York ?
         df = df.sort_index()
         df.attrs = {'symbol': symbol, 'timeframe': timeframe}
-        print(f"{symbol}: {len(df)} rows (start={df.index[0]}, end={df.index[-1]})")
+        logger.debug(f"{symbol}: {len(df)} rows (start={df.index[0]}, end={df.index[-1]})")
         return df
     except Exception as e:
-        print(f"Error parsing csv '{path}': {e}")
+        logger.warning(f"Error parsing csv '{path}': {e}")
     return pd.DataFrame()
 
 
 @try_except
 def load_json_data(symbol: str, path: str) -> Optional[Dict]:
-    print(f"{symbol}: loading json data '{path}'")
+    logger.debug(f"{symbol}: loading json data '{path}'")
     with open(path) as f:
         json_data = json.load(f)
         symbol_data = json_data.get(symbol)
         if not symbol_data:
-            print(f"Missing symbol '{symbol}' in file '{path}'")
+            logger.warning(f"Missing symbol '{symbol}' in file '{path}'")
         else:
             return symbol_data
     return None
