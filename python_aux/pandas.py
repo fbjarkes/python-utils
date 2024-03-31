@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
 
-from ..utils.decorators import try_except
-from ..utils.functional import pipe
+from .decorators import try_except
+from .functional import pipe
 
 logger = logging.getLogger(__name__)
 
