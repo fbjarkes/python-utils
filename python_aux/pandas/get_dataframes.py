@@ -87,7 +87,7 @@ def json_to_dataframe(symbol: str, timeframe: str, data: Dict) -> pd.DataFrame:
         return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df = pd.DataFrame(data, columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df.set_index('DateTime', inplace=True)
-    # Convert to Wall Street time since all trades have start/dates in Wall Street time
+    # Always assume Wall Street
     df.index = pd.to_datetime(df.index, utc=True).tz_convert('America/New_York').tz_localize(None)
     df = df.sort_index()  # TODO: Never needed before?!
     df.attrs = {'symbol': symbol, 'timeframe': timeframe}
@@ -120,21 +120,25 @@ def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=
         raise Exception(f"Unknown provider '{provider}'")
 
 
+def get_symbols(symbol_list):
+        if symbol_list[0].startswith('/'):
+            file = symbol_list[0]
+            symbols = []
+            with open(file) as f:
+                symbols += [ticker.rstrip() for ticker in f.readlines() if not ticker.startswith('#')]
+            symbols = list(set(symbols))  # NOTE: reorders elements
+        else:
+            symbols = list(set(symbol_list))  # NOTE: reorders elements
+        return symbols
+
+
 def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False, path=None, transform='', process_workers=0) -> List[pd.DataFrame]:
     if not path:
         raise Exception(f"Missing path for provider '{provider}'")
 
-    dfs = []
-
-    if symbol_list[0].startswith('/'):
-        file = symbol_list[0]
-        symbols = []
-        with open(file) as f:
-            symbols += [ticker.rstrip() for ticker in f.readlines() if not ticker.startswith('#')]
-        symbols = list(set(symbols))  # NOTE: reorders elements
-    else:
-        symbols = list(set(symbol_list))  # NOTE: reorders elements
-
+    symbols = get_symbols(symbol_list)
+    dfs = []    
+    
     if process_workers > 0:
         with Pool(process_workers) as pool:
             dfs = pool.starmap(get_dataframe, [(provider, symbol, start, end, timeframe, rth_only, path, transform) for symbol in symbols])
