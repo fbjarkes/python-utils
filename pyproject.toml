@@ -11,9 +11,11 @@ python = "^3.9.5"
 pandas = "^2.2.1"
 
 
+
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.3"
 black = "^23.10.1"
+isort = "^5.13.2"
 
 [build-system]
 requires = ["poetry-core"]
@@ -33,3 +35,25 @@ select = [
 exclude = [
   "tests",
 ]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 180
+
+# Add MyPy
+#[tool.mypy]
+#strict = true
+#files = [
+#  "src",
+#  "tests",
+#]
+
+
+
+[tool.poetry.scripts]
+format = "black . &&  ruff . && isort ."
