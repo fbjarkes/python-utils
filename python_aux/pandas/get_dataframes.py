@@ -11,7 +11,6 @@ import pandas as pd
 from ..utils.decorators import try_except
 from ..utils.functional import pipe
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -124,15 +123,15 @@ def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=
 
 
 def get_symbols(symbol_list):
-        if symbol_list[0].startswith('/'):
-            file = symbol_list[0]
-            symbols = []
-            with open(file) as f:
-                symbols += [ticker.rstrip() for ticker in f.readlines() if not ticker.startswith('#')]
-            symbols = list(set(symbols))  # NOTE: reorders elements
-        else:
-            symbols = list(set(symbol_list))  # NOTE: reorders elements
-        return symbols
+    if symbol_list[0].startswith('/'):
+        file = symbol_list[0]
+        symbols = []
+        with open(file) as f:
+            symbols += [ticker.rstrip() for ticker in f.readlines() if not ticker.startswith('#')]
+        symbols = list(set(symbols))  # NOTE: reorders elements
+    else:
+        symbols = list(set(symbol_list))  # NOTE: reorders elements
+    return symbols
 
 
 def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False, path=None, transform='', process_workers=0) -> List[pd.DataFrame]:
@@ -140,8 +139,8 @@ def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False,
         raise Exception(f"Missing path for provider '{provider}'")
 
     symbols = get_symbols(symbol_list)
-    dfs = []    
-    
+    dfs = []
+
     if process_workers > 0:
         with Pool(process_workers) as pool:
             dfs = pool.starmap(get_dataframe, [(provider, symbol, start, end, timeframe, rth_only, path, transform) for symbol in symbols])
