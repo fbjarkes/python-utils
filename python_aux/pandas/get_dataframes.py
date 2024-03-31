@@ -16,17 +16,19 @@ def filter_rth(df: pd.DataFrame, start_time='09:30', end_time='16:00') -> pd.Dat
     else:
         return df
 
+
 def filter_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
-    #TODO: raise exception if start/end outside of df?
-        
-    if start and end and not df.empty:        
+    # TODO: raise exception if start/end outside of df?
+
+    if start and end and not df.empty:
         df = df[start:end]
         return df
     if end and not df.empty:
         df = df[:end]
-        #logger.debug(f"Filtering date to {end}, last={df.index[-1]}, OHLC={df.iloc[-1].values}")
+        # logger.debug(f"Filtering date to {end}, last={df.index[-1]}, OHLC={df.iloc[-1].values}")
         return df
     return df
+
 
 def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_York') -> Union[pd.DataFrame, None]:
     file_path = f"{path}/{timeframe}/{symbol}.csv"
@@ -38,7 +40,7 @@ def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_Yor
         else:
             df.index = pd.to_datetime(df.index, unit='s', utc=True).tz_localize(None)
         df.rename(columns={'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close'}, inplace=True)
-        df.attrs = {'symbol': symbol, 'timeframe': timeframe}        
+        df.attrs = {'symbol': symbol, 'timeframe': timeframe}
         duplicates = df.index.duplicated(keep='first')
         dupe_count = duplicates.sum()
         if dupe_count > 0:
@@ -52,19 +54,19 @@ def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_Yor
     return pd.DataFrame()
 
 
-def get_dataframe_ib(timeframe: str, symbol: str, path: str, tz='America/New_York') -> Optional[pd.DataFrame]:    
+def get_dataframe_ib(timeframe: str, symbol: str, path: str, tz='America/New_York') -> Optional[pd.DataFrame]:
     p = os.path.expanduser(os.path.join(path, timeframe, f"{symbol}.csv"))
     try:
         df = pd.read_csv(p, dtype={'Open': np.float32, 'High': np.float32, 'Low': np.float32, 'Close': np.float32, 'Volume': np.float32}, parse_dates=True, index_col='Date')
-        #TODO need to convert to TZ America/New_York ?
-        df = df.sort_index()            
-        df.attrs = {'symbol': symbol, 'timeframe': timeframe}        
+        # TODO need to convert to TZ America/New_York ?
+        df = df.sort_index()
+        df.attrs = {'symbol': symbol, 'timeframe': timeframe}
         print(f"{symbol}: {len(df)} rows (start={df.index[0]}, end={df.index[-1]})")
         return df
     except Exception as e:
         print(f"Error parsing csv '{path}': {e}")
     return pd.DataFrame()
-    
+
 
 @try_except
 def load_json_data(symbol: str, path: str) -> Optional[Dict]:
@@ -73,7 +75,7 @@ def load_json_data(symbol: str, path: str) -> Optional[Dict]:
         json_data = json.load(f)
         symbol_data = json_data.get(symbol)
         if not symbol_data:
-            print(f"Missing symbol '{symbol}' in file '{path}'")            
+            print(f"Missing symbol '{symbol}' in file '{path}'")
         else:
             return symbol_data
     return None
@@ -81,12 +83,12 @@ def load_json_data(symbol: str, path: str) -> Optional[Dict]:
 
 def json_to_dataframe(symbol: str, timeframe: str, data: Dict) -> pd.DataFrame:
     if data is None:
-        return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])    
+        return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df = pd.DataFrame(data, columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df.set_index('DateTime', inplace=True)
     # Convert to Wall Street time since all trades have start/dates in Wall Street time
     df.index = pd.to_datetime(df.index, utc=True).tz_convert('America/New_York').tz_localize(None)
-    df = df.sort_index() # TODO: Never needed before?!
+    df = df.sort_index()  # TODO: Never needed before?!
     df.attrs = {'symbol': symbol, 'timeframe': timeframe}
     return df
 
@@ -101,9 +103,13 @@ def get_dataframe_alpaca_file(timeframe: str, symbol: str, path: str) -> Union[p
 def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=None, transform='') -> pd.DataFrame:
     if not path:
         raise Exception(f"Missing path for provider '{provider}'")
-    
-    post_process = pipe(lambda df: transform_timeframe(df, timeframe, (transform if transform else timeframe)), lambda df: filter_rth(df) if rth_only else df, lambda df: filter_date(df, start, end))
-    if provider == 'tv':                    
+
+    post_process = pipe(
+        lambda df: transform_timeframe(df, timeframe, (transform if transform else timeframe)),
+        lambda df: filter_rth(df) if rth_only else df,
+        lambda df: filter_date(df, start, end),
+    )
+    if provider == 'tv':
         return post_process(get_dataframe_tv(timeframe=timeframe, symbol=symbol, path=path))
     elif provider == 'alpaca-file':
         return post_process(get_dataframe_alpaca_file(timeframe=timeframe, symbol=symbol, path=path))
@@ -116,18 +122,18 @@ def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=
 def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False, path=None, transform='', process_workers=0) -> List[pd.DataFrame]:
     if not path:
         raise Exception(f"Missing path for provider '{provider}'")
-        
+
     dfs = []
-        
+
     if symbol_list[0].startswith('/'):
         file = symbol_list[0]
         symbols = []
         with open(file) as f:
             symbols += [ticker.rstrip() for ticker in f.readlines() if not ticker.startswith('#')]
-        symbols = list(set(symbols))    # NOTE: reorders elements      
+        symbols = list(set(symbols))  # NOTE: reorders elements
     else:
-        symbols = list(set(symbol_list))  # NOTE: reorders elements      
-    
+        symbols = list(set(symbol_list))  # NOTE: reorders elements
+
     if process_workers > 0:
         with Pool(process_workers) as pool:
             dfs = pool.starmap(get_dataframe, [(provider, symbol, start, end, timeframe, rth_only, path, transform) for symbol in symbols])
@@ -136,11 +142,11 @@ def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False,
         for symbol in symbols:
             df = get_dataframe(provider, symbol, start, end, timeframe, rth_only, path, transform)
             if not df.empty:
-                dfs.append(df)    
+                dfs.append(df)
     return dfs
 
 
-def transform_timeframe(df: pd.DataFrame, timeframe:str, transform:str) -> pd.DataFrame:
+def transform_timeframe(df: pd.DataFrame, timeframe: str, transform: str) -> pd.DataFrame:
     if timeframe == transform or df.empty:
         return df
     conversion = {'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last', 'Volume': 'sum'}
