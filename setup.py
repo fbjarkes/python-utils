@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="python-aux",
+    name="python-utils",
     version="0.0.1",
     author="fbjarkes",
     author_email="fbjarkes-github.q5706@aleeas.com",
