@@ -1,15 +1,20 @@
 from functools import wraps
 from time import perf_counter
 from typing import Callable
+import logging
+import traceback
 
+logger = logging.getLogger(__name__)
 
 def try_except(func):
+    @wraps(func)
     def handler(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(e)  # TODO: user logger
-
+            logger.warning(f"{func.__name__}: {e}")
+            #if stack_trace:
+            traceback.print_exc()
     return handler
 
 
