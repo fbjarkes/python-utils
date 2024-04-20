@@ -134,6 +134,21 @@ def get_symbols(symbol_list):
     return symbols
 
 
+def symbols_from_file(file_path: str) -> List[str]:
+    with open(file_path) as f:                
+        symbols = [line.strip() for line in f.readlines() if line.strip()]        
+        symbols = [symbol for symbol in symbols if not symbol.startswith('#')]
+        return symbols
+    
+
+def get_symbols_from_path(path: str, filetype='csv', prefix=''):
+    symbols = []
+    for file in os.listdir(path):
+        if file.endswith(filetype) and file.startswith(prefix):
+            symbols.append(file.replace(f".{filetype}", ''))
+    return symbols
+
+
 def get_dataframes(provider, symbol_list, start, end, timeframe, rth_only=False, path=None, transform='', process_workers=0) -> List[pd.DataFrame]:
     if not path:
         raise Exception(f"Missing path for provider '{provider}'")
