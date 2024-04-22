@@ -26,6 +26,6 @@ def timer(func: Callable) -> Callable:
         end = perf_counter()
         run_time = end - start
         print(f"{func.__name__} ran in {run_time:.4f} seconds")
-        return results, run_time
+        return results
 
     return wrapper
