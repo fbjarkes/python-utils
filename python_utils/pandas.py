@@ -3,7 +3,7 @@ import logging
 import os
 from functools import lru_cache
 from multiprocessing import Pool
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -141,7 +141,7 @@ def symbols_from_file(file_path: str) -> List[str]:
         return symbols
     
 
-def get_symbols_from_path(path: str, filetype='csv', prefix=''):
+def get_symbols_from_path(path: str, filetype: Literal['csv', 'json'], prefix=''):
     symbols = []
     for file in os.listdir(path):
         if file.endswith(filetype) and file.startswith(prefix):
