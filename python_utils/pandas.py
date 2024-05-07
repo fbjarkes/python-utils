@@ -33,11 +33,16 @@ def filter_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
     return df
 
 
-def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_York') -> Union[pd.DataFrame, None]:
+
+def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_York', include_all_columns: bool = True) -> Union[pd.DataFrame, None]:
     file_path = f"{path}/{timeframe}/{symbol}.csv"
     logger.debug(f"{symbol}: parsing tradingview data '{file_path}'")
+    default_cols = ['time', 'open', 'high', 'low', 'close', 'Volume']
     try:
-        df = pd.read_csv(file_path, index_col='time', parse_dates=False, usecols=['time', 'open', 'high', 'low', 'close', 'Volume'])
+        if include_all_columns:
+            df = pd.read_csv(file_path, index_col='time', parse_dates=False)
+        else:
+            df = pd.read_csv(file_path, index_col='time', parse_dates=False, usecols=default_cols)
         if tz:
             df.index = pd.to_datetime(df.index, unit='s', utc=True).tz_convert(tz).tz_localize(None)
         else:
@@ -55,6 +60,7 @@ def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_Yor
         logger.warning(f"Error parsing csv '{path}': {e}")
 
     return pd.DataFrame()
+
 
 
 def get_dataframe_ib(timeframe: str, symbol: str, path: str, tz='America/New_York') -> Optional[pd.DataFrame]:
