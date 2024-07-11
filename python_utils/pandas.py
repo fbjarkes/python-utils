@@ -3,7 +3,7 @@ import logging
 import os
 from functools import lru_cache
 from multiprocessing import Pool
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 def filter_rth(df: pd.DataFrame, start_time='09:30', end_time='16:00') -> pd.DataFrame:
     if start_time and end_time and not df.empty and df.attrs['timeframe'] not in ['day', 'week', 'month']:
+        if df.attrs['timeframe'] == '60min':
+            start_time = '09:00'
         return df.between_time(start_time, end_time, inclusive='left')
     else:
         return df
@@ -31,7 +33,6 @@ def filter_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
         # logger.debug(f"Filtering date to {end}, last={df.index[-1]}, OHLC={df.iloc[-1].values}")
         return df
     return df
-
 
 
 def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_York', include_all_columns: bool = True) -> Union[pd.DataFrame, None]:
@@ -61,8 +62,6 @@ def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_Yor
 
     return pd.DataFrame()
 
-
-
 def get_dataframe_ib(timeframe: str, symbol: str, path: str, tz='America/New_York') -> Optional[pd.DataFrame]:
     p = os.path.expanduser(os.path.join(path, timeframe, f"{symbol}.csv"))
     try:
@@ -90,7 +89,7 @@ def load_json_data(symbol: str, path: str) -> Optional[Dict]:
     return None
 
 
-def json_to_dataframe(symbol: str, timeframe: str, data: Dict) -> pd.DataFrame:
+def json_to_dataframe(symbol: str, timeframe: str, data: Optional[Dict]) -> pd.DataFrame:
     if data is None:
         return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df = pd.DataFrame(data, columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
@@ -108,7 +107,7 @@ def get_dataframe_alpaca_file(timeframe: str, symbol: str, path: str) -> Union[p
     return json_to_dataframe(symbol, timeframe, json_data)
 
 
-@lru_cache
+#@lru_cache
 def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=None, transform='') -> pd.DataFrame:
     if not path:
         raise Exception(f"Missing path for provider '{provider}'")
@@ -137,21 +136,6 @@ def get_symbols(symbol_list):
         symbols = list(set(symbols))  # NOTE: reorders elements
     else:
         symbols = list(set(symbol_list))  # NOTE: reorders elements
-    return symbols
-
-
-def symbols_from_file(file_path: str) -> List[str]:
-    with open(file_path) as f:                
-        symbols = [line.strip() for line in f.readlines() if line.strip()]        
-        symbols = [symbol for symbol in symbols if not symbol.startswith('#')]
-        return symbols
-    
-
-def get_symbols_from_path(path: str, filetype: Literal['csv', 'json'], prefix=''):
-    symbols = []
-    for file in os.listdir(path):
-        if file.endswith(filetype) and file.startswith(prefix):
-            symbols.append(file.replace(f".{filetype}", ''))
     return symbols
 
 
