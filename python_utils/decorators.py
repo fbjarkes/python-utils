@@ -6,16 +6,29 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
+
 def try_except(func):
     @wraps(func)
-    def handler(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logger.warning(f"{func.__name__}: {e}")
-            #if stack_trace:
+            import traceback
             traceback.print_exc()
-    return handler
+            print(e)
+    return wrapper
+
+
+# def try_except(func):
+#     @wraps(func)
+#     def handler(*args, **kwargs):
+#         try:
+#             return func(*args, **kwargs)
+#         except Exception as e:
+#             logger.warning(f"{func.__name__}: {e}")
+#             #if stack_trace:
+#             traceback.print_exc()
+#     return handler
 
 
 def timer(func: Callable) -> Callable:
