@@ -36,7 +36,7 @@ def filter_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
 
 
 def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_York', include_all_columns: bool = True) -> Union[pd.DataFrame, None]:
-    file_path = f"{path}/{timeframe}/{symbol}.csv"
+    file_path = os.path.join(path, timeframe, f"{symbol}.csv")
     logger.debug(f"{symbol}: parsing tradingview data '{file_path}'")
     default_cols = ['time', 'open', 'high', 'low', 'close', 'Volume']
     try:
@@ -57,7 +57,7 @@ def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_Yor
             df = df[~duplicates]
         logger.debug(f"{symbol}: {len(df)} rows (start={df.index[0]}, end={df.index[-1]} dupes={dupe_count}) ")
         return df
-    except Exception as e:
+    except Exception as e:  
         logger.warning(f"Error parsing csv '{path}': {e}")
 
     return pd.DataFrame()
@@ -121,6 +121,8 @@ def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=
         return post_process(get_dataframe_tv(timeframe=timeframe, symbol=symbol, path=path))
     elif provider == 'alpaca-file':
         return post_process(get_dataframe_alpaca_file(timeframe=timeframe, symbol=symbol, path=path))
+    elif provider == 'alpaca':
+        raise Exception("TODO") # Use alpaca API (assume API keys already present in os.env)
     elif provider == 'ib':
         return post_process(get_dataframe_ib(timeframe=timeframe, symbol=symbol, path=path))
     else:
