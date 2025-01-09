@@ -69,7 +69,7 @@ def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_Yor
         logger.debug(f"{symbol}: {len(df)} rows (start={df.index[0]}, end={df.index[-1]} dupes={dupe_count}) ")
         return df
     except Exception as e:  
-        logger.warning(f"Error parsing csv '{path}': {e}")
+        logger.warning(f"Error parsing csv '{file_path}': {e}")
 
     return pd.DataFrame()
 
@@ -83,7 +83,7 @@ def get_dataframe_ib(timeframe: str, symbol: str, path: str, tz='America/New_Yor
         logger.debug(f"{symbol}: {len(df)} rows (start={df.index[0]}, end={df.index[-1]})")
         return df
     except Exception as e:
-        logger.warning(f"Error parsing csv '{path}': {e}")
+        logger.warning(f"Error parsing csv '{p}': {e}")
     return pd.DataFrame()
 
 
