@@ -9,6 +9,7 @@ packages = [{include = "python_utils"}]
 [tool.poetry.dependencies]
 python = "^3.9.5"
 pandas = "^2.2.1"
+alpaca-py = "^0.35.0"
 
 
 
