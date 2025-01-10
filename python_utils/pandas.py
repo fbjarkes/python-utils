@@ -38,7 +38,9 @@ def filter_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
 
 
 def _parse_timeframe(tf: str) -> TimeFrame:
-    #TODO: 'day' is ??
+    if tf == 'day':
+        return TimeFrame(1, TimeFrameUnit.Day)
+    
     amount = int(''.join(filter(str.isdigit, tf)))
     unit = ''.join(filter(str.isalpha, tf)).lower()
     if unit == 'min' and amount == 60:
@@ -118,10 +120,8 @@ def get_dataframe_alpaca_file(timeframe: str, symbol: str, path: str) -> Union[p
     return json_to_dataframe(symbol, timeframe, json_data)
 
 #TODO: move alpaca stuff to alpaca.py?
-def get_dataframe_alpaca(timeframe: str, symbol: str, start: str, end: str, eth=False) -> Union[pd.DataFrame, None]:
-    if timeframe != 'day':
-        raise Exception("Only 'day' supported currently")
-    
+@lru_cache
+def get_dataframe_alpaca(timeframe: str, symbol: str, start: str, end: str, rth_only: bool) -> Union[pd.DataFrame, None]:
     if 'ALPACA_KEY_ID' not in os.environ or 'ALPACA_SECRET_KEY' not in os.environ:
         logger.warning("Missing 'ALPACA_KEY_ID' or 'ALPACA_SECRET_KEY' in environment variables")
         return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume']) 
@@ -131,8 +131,7 @@ def get_dataframe_alpaca(timeframe: str, symbol: str, start: str, end: str, eth=
     now = datetime.now()
     request_params = StockBarsRequest(
         symbol_or_symbols=[symbol],
-        #timeframe=_parse_timeframe(timeframe),
-        timeframe=TimeFrame(1, TimeFrameUnit.Day),
+        timeframe=_parse_timeframe(timeframe),
         start=start,
         end=now,
     )
@@ -150,7 +149,7 @@ def get_dataframe_alpaca(timeframe: str, symbol: str, start: str, end: str, eth=
             df = bars.df
         df = df.tz_convert('America/New_York')
         
-        if timeframe != 'day' and not eth:
+        if timeframe != 'day' and rth_only:
             if timeframe == '60min':
                 # NOTE: includes 30min of PM... should be accurate enough anyway
                 df = df.between_time('09:00', '16:00', inclusive='left')
@@ -182,7 +181,7 @@ def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=
     elif provider == 'alpaca-file':
         return post_process(get_dataframe_alpaca_file(timeframe=timeframe, symbol=symbol, path=path))
     elif provider == 'alpaca':
-        return get_dataframe_alpaca(timeframe, symbol, start, end, path)
+        return get_dataframe_alpaca(timeframe, symbol, start, end, rth_only)
     elif provider == 'ib':
         return post_process(get_dataframe_ib(timeframe=timeframe, symbol=symbol, path=path))
     else:
