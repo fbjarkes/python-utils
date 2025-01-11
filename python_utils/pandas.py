@@ -1,17 +1,18 @@
-from datetime import datetime
+
 import json
 import logging
 import os
-from functools import lru_cache
+
 from multiprocessing import Pool
 from typing import Dict, List, Optional, Union
-from alpaca.data import CryptoHistoricalDataClient, CryptoBarsRequest, StockHistoricalDataClient, StockBarsRequest, TimeFrame, TimeFrameUnit
+
 
 import numpy as np
 import pandas as pd
 
 from .decorators import try_except
 from .functional import pipe
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +36,6 @@ def filter_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
         # logger.debug(f"Filtering date to {end}, last={df.index[-1]}, OHLC={df.iloc[-1].values}")
         return df
     return df
-
-
-def _parse_timeframe(tf: str) -> TimeFrame:
-    if tf == 'day':
-        return TimeFrame(1, TimeFrameUnit.Day)
-    
-    amount = int(''.join(filter(str.isdigit, tf)))
-    unit = ''.join(filter(str.isalpha, tf)).lower()
-    if unit == 'min' and amount == 60:
-        return TimeFrame(1, TimeFrameUnit.Hour)
-    return TimeFrame(amount, TimeFrameUnit(unit.capitalize()))
 
 
 def get_dataframe_tv(timeframe: str, symbol: str, path: str, tz='America/New_York', include_all_columns: bool = True) -> Union[pd.DataFrame, None]:
@@ -119,54 +109,8 @@ def get_dataframe_alpaca_file(timeframe: str, symbol: str, path: str) -> Union[p
     json_data = load_json_data(symbol, file_path)
     return json_to_dataframe(symbol, timeframe, json_data)
 
-#TODO: move alpaca stuff to alpaca.py?
-@lru_cache
-def get_dataframe_alpaca(timeframe: str, symbol: str, start: str, end: str, rth_only: bool) -> Union[pd.DataFrame, None]:
-    if 'ALPACA_KEY_ID' not in os.environ or 'ALPACA_SECRET_KEY' not in os.environ:
-        logger.warning("Missing 'ALPACA_KEY_ID' or 'ALPACA_SECRET_KEY' in environment variables")
-        return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume']) 
-    
-    client = StockHistoricalDataClient(os.environ['ALPACA_KEY_ID'], os.environ['ALPACA_SECRET_KEY'])
-    
-    now = datetime.now()
-    request_params = StockBarsRequest(
-        symbol_or_symbols=[symbol],
-        timeframe=_parse_timeframe(timeframe),
-        start=start,
-        end=now,
-    )
-    
-    try:
-        bars = client.get_stock_bars(request_params)
-    except Exception as e:
-        logger.warning(f"Error getting bars for {symbol} with request {request_params}: {e}")
-        return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
-    
-    if bars:
-        if bars.df.index.nlevels == 2:
-            df = bars.df.droplevel(0)
-        else:
-            df = bars.df
-        df = df.tz_convert('America/New_York')
-        
-        if timeframe != 'day' and rth_only:
-            if timeframe == '60min':
-                # NOTE: includes 30min of PM... should be accurate enough anyway
-                df = df.between_time('09:00', '16:00', inclusive='left')
-            else:
-                df = df.between_time('09:30', '16:00', inclusive='left')
-        #if end_dt != '':
-        #    df = df[:end_dt]
 
-        df.attrs['symbol'] = symbol
-        df.attrs['timeframe'] = timeframe
-        df.rename(columns={'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
-        return df
-    else:
-        logger.warning(f"Empty StockBarsRequest response for symbol '{symbol}'")
-        return pd.DataFrame(columns=['DateTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
 
-#@lru_cache
 def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=None, transform='') -> pd.DataFrame:
     if path is None:
         raise Exception(f"Missing path for provider '{provider}'")
@@ -181,6 +125,7 @@ def get_dataframe(provider, symbol, start, end, timeframe, rth_only=False, path=
     elif provider == 'alpaca-file':
         return post_process(get_dataframe_alpaca_file(timeframe=timeframe, symbol=symbol, path=path))
     elif provider == 'alpaca':
+        from python_utils.alpaca import get_dataframe_alpaca
         return get_dataframe_alpaca(timeframe, symbol, start, end, rth_only)
     elif provider == 'ib':
         return post_process(get_dataframe_ib(timeframe=timeframe, symbol=symbol, path=path))
