@@ -20,7 +20,7 @@ def _parse_timeframe(tf: str) -> TimeFrame:
     return TimeFrame(amount, TimeFrameUnit(unit.capitalize()))
 
 
-@lru_cache
+#@lru_cache
 def get_dataframe_alpaca(timeframe: str, symbol: str, start: str, end: str, rth_only: bool) -> Union[pd.DataFrame, None]:
     if 'ALPACA_KEY_ID' not in os.environ or 'ALPACA_SECRET_KEY' not in os.environ:
         logger.warning("Missing 'ALPACA_KEY_ID' or 'ALPACA_SECRET_KEY' in environment variables")
