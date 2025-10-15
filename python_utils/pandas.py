@@ -83,6 +83,7 @@ def get_dataframe_ib(timeframe: str, symbol: str, path: str, tz='America/New_Yor
 def load_json_data(symbol: str, path: str) -> Optional[Dict]:
     logger.debug(f"{symbol}: loading json data '{path}'")
     with open(path) as f:
+        # Try: https://github.com/ijl/orjson (e.g. compare while loading 1min bars 10yrs of data)
         json_data = json.load(f)
         symbol_data = json_data.get(symbol)
         if not symbol_data:
